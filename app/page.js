@@ -1,14 +1,15 @@
 "use client";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import MyForm from "./components/form.jsx";
 
-import Formulario from "./components/form.jsx";
+export default function App() {
+  const methods = useForm();
 
-const App = () => {
   return (
-    <div className="flex flex-col items-center justify-center">
-      
-      <Formulario />
+    <div className="flex items-center justify-center w-full h-screen">
+      <FormProvider {...methods}>
+        <MyForm />
+      </FormProvider>
     </div>
   );
-};
-
-export default App;
+}

@@ -1,135 +1,173 @@
-import { Autocomplete, Grid, TextField } from "@mui/material";
-import {
-  Controller,
-  FormProvider,
-  useForm,
-  useFormContext,
-} from "react-hook-form";
+"use client";
 
-const pessoasPreDefinidas = [
-  { nome: "Rêgo", telefone: "123456789", email: "rego@example.com" },
-  { nome: "Lays", telefone: "987654321", email: "lays@example.com" },
-  { nome: "Carlos", telefone: "111222333", email: "carlos@example.com" },
-  { nome: "Ana", telefone: "444555666", email: "ana@example.com" },
-  { nome: "Pedro", telefone: "777888999", email: "pedro@example.com" },
-  { nome: "Laura", telefone: "123123123", email: "laura@example.com" },
-  { nome: "Lucas", telefone: "456456456", email: "lucas@example.com" },
-  { nome: "Isabel", telefone: "789789789", email: "isabel@example.com" },
-  { nome: "Fernando", telefone: "654654654", email: "fernando@example.com" },
-  { nome: "Camila", telefone: "987987987", email: "camila@example.com" },
-];
+import * as React from "react";
+import { useFormContext, Controller } from "react-hook-form";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
+import CircularProgress from "@mui/material/CircularProgress";
 
-const AutocompleteAsyncLoad = () => {
-  const { control, setValue } = useFormContext();
+function sleep(duration) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, duration);
+  });
+}
 
-  const handleAutocompleteChange = (event, newValue) => {
-    if (newValue) {
-      setValue("pessoa", newValue.nome || "");
-      setValue("telefone", newValue.telefone || "");
-      setValue("email", newValue.email || "");
-    } else {
-      setValue("pessoa", "");
-      setValue("telefone", "");
-      setValue("email", "");
+export default function MyForm() {
+  const { control, handleSubmit } = useFormContext();
+  const [open, setOpen] = React.useState(false);
+  const [options, setOptions] = React.useState([]);
+  const loading = open && options.length === 0;
+
+  React.useEffect(() => {
+    let active = true;
+
+    if (!loading) {
+      return undefined;
     }
-  };
 
-  return (
-    <Controller
-      name="pessoa"
-      control={control}
-      render={({ field }) => (
-        <Autocomplete
-          {...field}
-          options={pessoasPreDefinidas}
-          getOptionLabel={(option) => option.nome}
-          onChange={handleAutocompleteChange}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Pessoa"
-              variant="outlined"
-              fullWidth
-              value={field.value || ""}
-            />
-          )}
-        />
-      )}
-    />
-  );
-};
+    (async () => {
+      await sleep(1e3);
 
-const Formulario = () => {
-  const methods = useForm();
+      if (active) {
+        setOptions([...formValues]);
+      }
+    })();
 
-  const onSubmit = (data) => {
+    return () => {
+      active = false;
+    };
+  }, [loading]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setOptions([]);
+    }
+  }, [open]);
+
+  const handleFormSubmit = (data) => {
     console.log(data);
   };
 
   return (
-    <FormProvider {...methods}>
-      <Grid
-        container
-        justifyContent="center"
-        alignItems="center"
-        style={{ minHeight: "100vh" }}
+    <form
+      className="flex items-center justify-center flex-col"
+      onSubmit={handleSubmit(handleFormSubmit)}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+      }}
+    >
+      <Controller
+        name="pessoa"
+        control={control}
+        render={({ field }) => (
+          <Autocomplete
+            {...field}
+            id="nome"
+            sx={{ width: 300, marginBottom: 2 }}
+            open={open}
+            onOpen={() => {
+              setOpen(true);
+            }}
+            onClose={() => {
+              setOpen(false);
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value?.id}
+            getOptionLabel={(option) => option.nome}
+            options={options}
+            loading={loading}
+            onChange={(event, value) => {
+              field.onChange(value?.id);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Nome"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <React.Fragment>
+                      {loading ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </React.Fragment>
+                  ),
+                }}
+              />
+            )}
+          />
+        )}
+      />
+
+      <Controller
+        name="telefone"
+        control={control}
+        rules={{
+          required: "Telefone é obrigatório",
+          pattern: {
+            value: /^[0-9]{10,}$/,
+            message: "Telefone inválido pelo menos 10 digitos",
+          },
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label="Telefone"
+            variant="outlined"
+            sx={{ width: 300, marginBottom: 2 }}
+            error={!!fieldState.error}
+            helperText={fieldState?.error?.message}
+          />
+        )}
+      />
+
+      <Controller
+        name="email"
+        control={control}
+        rules={{
+          required: "E-mail é obrigatório",
+          pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: "E-mail inválido",
+          },
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label="E-mail"
+            variant="outlined"
+            sx={{ width: 300, marginBottom: 2 }}
+            error={!!fieldState.error}
+            helperText={fieldState?.error?.message}
+          />
+        )}
+      />
+
+      <button
+        className="rounded-xl bg-purple-600 px-4 py-2 text-white font-bold"
+        type="submit"
       >
-        <form onSubmit={methods.handleSubmit(onSubmit)}>
-          <div className="w-full items-center p-2 justify-center">
-            <h1 className="text-center p-2 font-bold">
-              Formulário com Next.js, React Hook Form e MUI
-            </h1>
-          </div>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <AutocompleteAsyncLoad />
-            </Grid>
-            <Grid item xs={12}>
-              <Controller
-                name="telefone"
-                control={methods.control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Telefone"
-                    variant="outlined"
-                    fullWidth
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Controller
-                name="email"
-                control={methods.control}
-                defaultValue=""
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="E-mail"
-                    variant="outlined"
-                    fullWidth
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <div className="w-full flex items-center justify-center">
-                <button
-                  className="rounded-xl items-center justify-center px-3 py-2 bg-purple-700 text-white font-bold "
-                  type="submit"
-                >
-                  Enviar
-                </button>
-              </div>
-            </Grid>
-          </Grid>
-        </form>
-      </Grid>
-    </FormProvider>
+        Enviar
+      </button>
+    </form>
   );
-};
+}
 
-export default Formulario;
+const formValues = [
+  { id: 1, nome: "Carlos Silva Lima" },
+  { id: 2, nome: "Carlito Ramos Junior" },
+  { id: 3, nome: "Paulo Felipe Castro" },
+  { id: 4, nome: "Ana Ramos" },
+  { id: 5, nome: "Fernando Lays" },
+  { id: 6, nome: "Mariana Oliveira" },
+  { id: 7, nome: "Lucas Santos" },
+  { id: 8, nome: "Cristina Santos " },
+  { id: 9, nome: "Ricardo Oliveira" },
+  { id: 10, nome: "Beatriz Pereira" },
+];
